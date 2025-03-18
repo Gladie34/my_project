@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import io
 
 def eda(df):
     st.subheader("📄 Raw Dataset Preview")
@@ -12,9 +12,9 @@ def eda(df):
     st.subheader("📊 Exploratory Data Analysis")
 
     if st.checkbox("Show Dataset Info"):
-        buffer = []
+        buffer = io.StringIO()
         df.info(buf=buffer)
-        s = "\n".join(buffer)
+        s = buffer.getvalue()
         st.text(s)
 
     if st.checkbox("Show Missing Values"):
