@@ -73,6 +73,3 @@ def predict_customer_info(df):
         prediction = model.predict(input_scaled)
         st.success(f"Predicted TimeToResolutionDays: {round(prediction[0], 2)} days")
 
-    st.sidebar.markdown("---")
-    st.sidebar.write("App developed by Gladie")
-
