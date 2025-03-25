@@ -55,6 +55,41 @@ def eda(df):
     plt.tight_layout()
     st.pyplot(fig)
 
+
+
+def plot_time_to_resolution_distribution(data, column='TimeToResolutionDays', title='Distribution of Time to Resolution (Days)'):
+    # Create figure and axis for Streamlit
+    fig, ax = plt.subplots(figsize=(14, 7))
+
+    # Sort the x-axis categories
+    order = sorted(data[column].unique())
+
+    # Set style and palette
+    sns.set_style("whitegrid")
+    sns.countplot(x=column, data=data, palette='viridis', order=order, ax=ax)
+
+    # Annotate bars with counts
+    for p in ax.patches:
+        height = p.get_height()
+        ax.annotate(f'{height:.0f}',
+                    (p.get_x() + p.get_width() / 2., height),
+                    ha='center', va='bottom',
+                    fontsize=11, fontweight='bold',
+                    color='black', xytext=(0, 5),
+                    textcoords='offset points')
+
+    # Set titles and labels
+    ax.set_title(title, fontsize=16, fontweight='bold')
+    ax.set_xlabel('Time to Resolution (Days)', fontsize=13)
+    ax.set_ylabel('Number of Claims', fontsize=13)
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+
+    # Display in Streamlit
+    st.pyplot(fig)
+
+
+def corelation_map(df):
     st.markdown("### Correlation Heatmap")
     numeric_df = df.select_dtypes(include=[np.number])  # Select numeric columns only
     plt.figure(figsize=(12, 8))
