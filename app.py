@@ -22,7 +22,7 @@ with st.sidebar:
         df = pd.read_csv("./data/Insurance_data.csv")
 
 # Main Section - Select Action
-st.markdown("### Select an Action")
+st.markdown("### Select an action")
 action = st.radio("Do you want to explore the data or run the model?", 
                   ('Explore Data', 'Predict TimeToResolutionDays'), index=0)
 
