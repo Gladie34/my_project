@@ -15,6 +15,18 @@ def predict_customer_info(df):
     st.subheader("⚙️ Data Preprocessing")
     st.info("Encoding categorical variables and scaling numeric ones...")
     X = df.drop(columns=["TimeToResolutionDays", "CustomerID"])
+    important_features = [
+    "CustomerFeedbackScore",
+    "PolicyStartYear",
+    "PolicyDiscounts",
+    "PolicyUpgradesLastYear",
+    "Age",
+    "County",
+    "Income",
+    "PolicyDurationMonths",
+    "NumberOfInquiriesLastYear",
+    "CustomerSatisfaction"]
+    X=X[important_features]
     y = df["TimeToResolutionDays"]
 
     # Encode categorical variables
