@@ -23,7 +23,7 @@ def replace_county_with_code(Insurance_data1,county_column='Region'):
         }
 
         # Replace county names with county codes
-        Insurance_data1['County'] = Insurance_data1[county_column].map(county_mapping)
+        Insurance_data1['Region'] = Insurance_data1[county_column].map(county_mapping)
 
         # Drop the original county name column
         Insurance_data1 = Insurance_data1.drop(columns=[county_column])
@@ -52,7 +52,7 @@ with st.sidebar:
     else:
         df = pd.read_csv("./data/Insurance_data.csv")
         df = replace_county_with_code(df,county_column='Region')
-
+        print(df.columns)
 
 # Main Section - Select Action
 st.markdown("### Select an Action")
@@ -71,3 +71,5 @@ if action == 'Explore Data':
 elif action == 'Predict TimeToResolutionDays':
     st.subheader("📊 Prediction")
     predict_customer_info(df)
+
+
