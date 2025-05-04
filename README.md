@@ -118,4 +118,4 @@ python src/train_model.py
 ## Acknowledgments
 
 - Data source: [A.K.I]
--Strathmore Universit
+- Strathmore University Masters Data Science class of 2023
