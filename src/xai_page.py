@@ -1,581 +1,455 @@
-# import streamlit as st
-# import pandas as pd
-# import numpy as np
-# import matplotlib.pyplot as plt
-# import plotly.express as px
-# import plotly.graph_objects as go
-# from sklearn.model_selection import train_test_split
-# from sklearn.preprocessing import LabelEncoder, StandardScaler
-# from sklearn.ensemble import RandomForestRegressor
-# from sklearn.inspection import permutation_importance
-
-
-#     """
-#     Creates the Explainable AI page to provide insights into model predictions
-#     and feature importance.
-#     """
-#     # Create tabs for different XAI approaches
-#     tabs = st.tabs(["Feature Importance", "What-If Analysis"])
-    
-#     # Important features selection (same as in predict_page)
-#     important_features = [
-#         "CustomerFeedbackScore",
-#         "PolicyStartYear",
-#         "PolicyDiscounts",
-#         "PolicyUpgradesLastYear",
-#         "Age",
-#         "County",
-#         "Income",
-#         "PolicyDurationMonths",
-#         "NumberOfInquiriesLastYear",
-#         "CustomerSatisfaction"
-#     ]
-    
-#     # Prepare data (same preparation steps as in predict_page)
-#     X = df[important_features].copy()
-#     y = df["TimeToResolutionDays"]
-    
-#     # Encoder and scaler
-#     le = LabelEncoder()
-#     scaler = StandardScaler()
-#     categorical_cols = X.select_dtypes(include=['object']).columns
-    
-#     # Encode categorical variables
-#     for col in categorical_cols:
-#         X[col] = le.fit_transform(X[col])
-    
-#     # Train/Test split
-#     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-#     # Train model (cached to avoid retraining)
-#     @st.cache_resource
-#     def train_model(X_train, y_train):
-#         st.info("Training model for explanations...")
-        
-#         # Create the Random Forest model with optimized parameters
-#         rf_model = RandomForestRegressor(
-#             n_estimators=100,
-#             max_depth=10,
-#             min_samples_split=5,
-#             min_samples_leaf=2,
-#             max_features='sqrt',
-#             n_jobs=-1,
-#             random_state=42
-#         )
-        
-#         # Fit the model
-#         rf_model.fit(X_train, y_train)
-        
-#         return rf_model
-    
-#     # Train model
-#     with st.spinner("Preparing model explanations... This may take a moment"):
-#         model = train_model(X_train, y_train)
-    
-#     # Make predictions
-#     y_pred = model.predict(X_test)
-    
-#     # Feature Importance Tab
-#     with tabs[0]:
-#         st.markdown("### 🏆 Feature Importance Analysis")
-        
-#         st.markdown("""
-#         Feature importance helps identify which features have the greatest impact on the model's predictions.
-#         Understanding these key drivers can help insurance professionals focus on the right factors.
-#         """)
-        
-#         # Add info box explaining XAI importance
-#         st.markdown("""
-#         <div class='info-box'>
-#             <h4>Why Explainable AI Matters</h4>
-#             <p>Explainable AI allows insurance professionals to:</p>
-#             <ul>
-#                 <li>Understand and trust the model's predictions</li>
-#                 <li>Identify which factors drive resolution times</li>
-#                 <li>Explain predictions to customers and stakeholders</li>
-#                 <li>Meet regulatory requirements for model transparency</li>
-#             </ul>
-#         </div>
-#         """, unsafe_allow_html=True)
-        
-#         col1, col2 = st.columns(2)
-        
-#         with col1:
-#             st.markdown("#### Built-in Feature Importance")
-#             st.markdown("""
-#             Random Forest's built-in feature importance measures how much each feature
-#             decreases impurity (variance) across all trees in the forest.
-#             """)
-            
-#             # Get feature importances
-#             importances = model.feature_importances_
-            
-#             # Create dataframe for visualization
-#             feature_importance_df = pd.DataFrame({
-#                 'Feature': important_features,
-#                 'Importance': importances
-#             }).sort_values('Importance', ascending=False)
-            
-#             # Plot feature importances
-#             fig = px.bar(
-#                 feature_importance_df,
-#                 x='Importance',
-#                 y='Feature',
-#                 orientation='h',
-#                 title='Built-in Feature Importance',
-#                 color='Importance',
-#                 color_continuous_scale='viridis'
-#             )
-            
-#             fig.update_layout(height=500)
-#             st.plotly_chart(fig, use_container_width=True)
-            
-#         with col2:
-#             st.markdown("#### Permutation Importance")
-#             st.markdown("""
-#             Permutation importance measures how much model performance decreases when a 
-#             feature's values are randomly shuffled. This approach is less biased towards
-#             high-cardinality features.
-#             """)
-            
-#             # Calculate permutation importance
-#             @st.cache_resource
-#             def get_permutation_importance(model, X_test, y_test):
-#                 perm_importance = permutation_importance(
-#                     model, X_test, y_test, 
-#                     n_repeats=5, 
-#                     random_state=42
-#                 )
-#                 return perm_importance
-            
-#             with st.spinner("Calculating permutation importance..."):
-#                 perm_importance = get_permutation_importance(model, X_test, y_test)
-            
-#             # Create dataframe for visualization
-#             perm_importance_df = pd.DataFrame({
-#                 'Feature': important_features,
-#                 'Importance': perm_importance.importances_mean,
-#                 'Std': perm_importance.importances_std
-#             }).sort_values('Importance', ascending=False)
-            
-#             # Plot permutation importances
-#             fig = px.bar(
-#                 perm_importance_df,
-#                 x='Importance',
-#                 y='Feature',
-#                 orientation='h',
-#                 title='Permutation Feature Importance',
-#                 color='Importance',
-#                 color_continuous_scale='viridis',
-#                 error_x='Std'
-#             )
-            
-#             fig.update_layout(height=500)
-#             st.plotly_chart(fig, use_container_width=True)
-        
-#         # Feature importance summary
-#         st.markdown("#### Key Insights")
-        
-#         # Get top 3 features from each method
-#         top_builtin = feature_importance_df['Feature'].tolist()[:3]
-#         top_perm = perm_importance_df['Feature'].tolist()[:3]
-        
-#         st.markdown(f"""
-#         <div class='success-box'>
-#             <h4>Top Features by Built-in Importance:</h4>
-#             <ol>
-#                 <li>{top_builtin[0]}</li>
-#                 <li>{top_builtin[1]}</li>
-#                 <li>{top_builtin[2]}</li>
-#             </ol>
-#         </div>
-#         """, unsafe_allow_html=True)
-        
-#         st.markdown(f"""
-#         <div class='success-box'>
-#             <h4>Top Features by Permutation Importance:</h4>
-#             <ol>
-#                 <li>{top_perm[0]}</li>
-#                 <li>{top_perm[1]}</li>
-#                 <li>{top_perm[2]}</li>
-#             </ol>
-#         </div>
-#         """, unsafe_allow_html=True)
-    
-#     # What-If Analysis Tab
-#     with tabs[1]:
-#         st.markdown("### 🔮 What-If Analysis Tool")
-        
-#         st.markdown("""
-#         The What-If Analysis tool allows you to explore how changing feature values
-#         affects predictions. This helps understand model sensitivity and causal relationships.
-#         """)
-        
-#         # Add info box
-#         st.markdown("""
-#         <div class='info-box'>
-#             <h4>How to Use This Tool</h4>
-#             <p>1. Select a data instance or enter custom values</p>
-#             <p>2. Adjust feature values using the sliders</p>
-#             <p>3. See how the predicted resolution time changes</p>
-#         </div>
-#         """, unsafe_allow_html=True)
-        
-#         # Choose how to create the baseline instance
-#         baseline_option = st.radio(
-#             "Select baseline instance:",
-#             ["Random from dataset", "Average values"]
-#         )
-        
-#         # Initialize baseline instance
-#         if baseline_option == "Random from dataset":
-#             # Use a random instance from the dataset
-#             random_idx = np.random.randint(0, len(X))
-#             baseline_instance = X.iloc[random_idx].to_dict()
-#             original_prediction = model.predict([list(baseline_instance.values())])[0]
-            
-#             st.markdown(f"Selected random instance with predicted resolution time: **{original_prediction:.2f} days**")
-            
-#         else:  # Average values
-#             # Use average values for each feature
-#             baseline_instance = {}
-#             for feature in important_features:
-#                 if X[feature].dtype.kind in 'bifc':  # numeric
-#                     baseline_instance[feature] = X[feature].mean()
-#                 else:  # categorical
-#                     baseline_instance[feature] = X[feature].mode()[0]
-            
-#             original_prediction = model.predict([list(baseline_instance.values())])[0]
-#             st.markdown(f"Using average values with predicted resolution time: **{original_prediction:.2f} days**")
-        
-#         # Create sliders for changing feature values
-#         st.markdown("#### Adjust Feature Values")
-        
-#         # Display in columns for better layout
-#         modified_instance = baseline_instance.copy()
-#         col1, col2 = st.columns(2)
-        
-#         # Create sliders in two columns
-#         features_col1 = important_features[:len(important_features)//2]
-#         features_col2 = important_features[len(important_features)//2:]
-        
-#         with col1:
-#             for feature in features_col1:
-#                 if X[feature].dtype.kind in 'bifc':  # numeric
-#                     min_val = float(X[feature].min())
-#                     max_val = float(X[feature].max())
-#                     step = (max_val - min_val) / 100
-                    
-#                     modified_instance[feature] = st.slider(
-#                         f"{feature}:",
-#                         min_value=min_val,
-#                         max_value=max_val,
-#                         value=float(baseline_instance[feature]),
-#                         step=step,
-#                         key=f"slider_{feature}"
-#                     )
-#                 else:  # categorical
-#                     unique_values = X[feature].unique().tolist()
-#                     modified_instance[feature] = st.selectbox(
-#                         f"{feature}:",
-#                         options=unique_values,
-#                         index=unique_values.index(baseline_instance[feature]) if baseline_instance[feature] in unique_values else 0,
-#                         key=f"select_{feature}"
-#                     )
-        
-#         with col2:
-#             for feature in features_col2:
-#                 if X[feature].dtype.kind in 'bifc':  # numeric
-#                     min_val = float(X[feature].min())
-#                     max_val = float(X[feature].max())
-#                     step = (max_val - min_val) / 100
-                    
-#                     modified_instance[feature] = st.slider(
-#                         f"{feature}:",
-#                         min_value=min_val,
-#                         max_value=max_val,
-#                         value=float(baseline_instance[feature]),
-#                         step=step,
-#                         key=f"slider_{feature}"
-#                     )
-#                 else:  # categorical
-#                     unique_values = X[feature].unique().tolist()
-#                     modified_instance[feature] = st.selectbox(
-#                         f"{feature}:",
-#                         options=unique_values,
-#                         index=unique_values.index(baseline_instance[feature]) if baseline_instance[feature] in unique_values else 0,
-#                         key=f"select_{feature}"
-#                     )
-        
-#         # Calculate new prediction
-#         new_prediction = model.predict([list(modified_instance.values())])[0]
-        
-#         # Display comparison
-#         st.markdown("#### Prediction Comparison")
-        
-#         col1, col2, col3 = st.columns([2, 2, 3])
-        
-#         with col1:
-#             st.metric(
-#                 label="Original Prediction",
-#                 value=f"{original_prediction:.2f} days"
-#             )
-        
-#         with col2:
-#             st.metric(
-#                 label="New Prediction",
-#                 value=f"{new_prediction:.2f} days",
-#                 delta=f"{new_prediction - original_prediction:.2f} days"
-#             )
-        
-#         with col3:
-#             # Calculate percent change
-#             percent_change = ((new_prediction - original_prediction) / original_prediction) * 100
-            
-#             if percent_change < 0:
-#                 st.success(f"🏎️ Resolution time decreased by {abs(percent_change):.1f}%")
-#             elif percent_change > 0:
-#                 st.warning(f"⏳ Resolution time increased by {percent_change:.1f}%")
-#             else:
-#                 st.info("🔄 No change in resolution time")
-        
-#         # Visualize the comparison
-#         fig = go.Figure()
-        
-#         fig.add_trace(go.Bar(
-#             x=['Original', 'New'],
-#             y=[original_prediction, new_prediction],
-#             marker_color=['#3498db', '#e74c3c']
-#         ))
-        
-#         avg_time = df["TimeToResolutionDays"].mean()
-#         fig.add_hline(
-#             y=avg_time,
-#             line_dash="dash",
-#             line_color="gray",
-#             annotation_text="Dataset Average"
-#         )
-        
-#         fig.update_layout(
-#             title="Comparing Predictions",
-#             xaxis_title="Scenario",
-#             yaxis_title="Resolution Time (Days)",
-#             height=400
-#         )
-        
-#         st.plotly_chart(fig, use_container_width=True)
-        
-#         # Feature contribution to the change
-#         st.markdown("#### Feature Contributions to Change")
-        
-#         # Calculate approximate contributions
-#         contributions = {}
-        
-#         for feature in important_features:
-#             # Create a new instance with only this feature changed
-#             test_instance = baseline_instance.copy()
-#             test_instance[feature] = modified_instance[feature]
-            
-#             # Predict
-#             test_prediction = model.predict([list(test_instance.values())])[0]
-            
-#             # Calculate contribution
-#             contribution = test_prediction - original_prediction
-#             contributions[feature] = contribution
-        
-#         # Create dataframe for visualization
-#         contribution_df = pd.DataFrame({
-#             'Feature': list(contributions.keys()),
-#             'Contribution': list(contributions.values())
-#         }).sort_values('Contribution', key=abs, ascending=False)
-        
-#         # Add colorscale
-#         fig = px.bar(
-#             contribution_df,
-#             x='Feature',
-#             y='Contribution',
-#             title='Approximate Feature Contributions to Prediction Change',
-#             color='Contribution',
-#             color_continuous_scale='RdBu_r'
-#         )
-        
-#         fig.update_layout(height=500)
-#         st.plotly_chart(fig, use_container_width=True)
-        
-#         # Final insights
-#         st.markdown("#### AI-Generated Insights")
-        
-#         # Simple insights based on feature changes
-#         major_contributors = contribution_df.head(3)
-        
-#         insights = """
-#         <div class='success-box'>
-#             <h4>Key Insights</h4>
-#             <ul>
-#         """
-        
-#         for _, row in major_contributors.iterrows():
-#             feature = row['Feature']
-#             contribution = row['Contribution']
-            
-#             if contribution < 0:
-#                 insights += f"<li>Decreasing <b>{feature}</b> reduced resolution time by {abs(contribution):.2f} days</li>"
-#             elif contribution > 0:
-#                 insights += f"<li>Increasing <b>{feature}</b> increased resolution time by {contribution:.2f} days</li>"
-        
-#         insights += """
-#             </ul>
-#             <h4>Recommendations</h4>
-#             <ul>
-#         """
-        
-#         # Add recommendations based on the insights
-#         if new_prediction < original_prediction:
-#             insights += "<li>This combination of factors could help reduce resolution times for similar claims</li>"
-            
-#             # Find the most impactful negative contributor
-#             most_impactful = contribution_df[contribution_df['Contribution'] < 0].iloc[0] if len(contribution_df[contribution_df['Contribution'] < 0]) > 0 else None
-#             if most_impactful is not None:
-#                 insights += f"<li>Focus on optimizing <b>{most_impactful['Feature']}</b> for maximum impact</li>"
-#         else:
-#             insights += "<li>Watch for these risk factors that may increase resolution times</li>"
-            
-#             # Find the most impactful positive contributor
-#             most_impactful = contribution_df[contribution_df['Contribution'] > 0].iloc[0] if len(contribution_df[contribution_df['Contribution'] > 0]) > 0 else None
-#             if most_impactful is not None:
-#                 insights += f"<li>Monitor <b>{most_impactful['Feature']}</b> closely as it significantly impacts resolution time</li>"
-        
-#         insights += """
-#             </ul>
-#         </div>
-#         """
-        
-#         st.markdown(insights, unsafe_allow_html=True)
-
-
 import streamlit as st
 import pandas as pd
 import numpy as np
-import shap
 import plotly.express as px
-import plotly.graph_objects as go
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from sklearn.inspection import permutation_importance
+import matplotlib.pyplot as plt
+from src.utils import load_model_assets
+
+# Load model and assets
+model, encoders, scaler, feature_names = load_model_assets()
+
+# Try to fix PIL issue before importing SHAP
+try:
+    import PIL
+    from PIL import Image
+    if not hasattr(Image, 'Resampling'):  # Check if Resampling is missing
+        # Add Resampling enum to PIL.Image if it's missing
+        # This is a compatibility fix for older Pillow versions
+        Image.Resampling = type('Resampling', (), {
+            'NEAREST': PIL.Image.NEAREST,
+            'BILINEAR': PIL.Image.BILINEAR,
+            'BICUBIC': PIL.Image.BICUBIC,
+            'LANCZOS': PIL.Image.LANCZOS
+        })
+except Exception as e:
+    st.error(f"Error with PIL: {e}")
+
+# Try to import SHAP
+try:
+    import shap
+    SHAP_AVAILABLE = True
+except ImportError:
+    SHAP_AVAILABLE = False
+except Exception as e:
+    st.error(f"Error importing SHAP: {e}")
+    SHAP_AVAILABLE = False
+
+# Function to get readable feature names
+def get_readable_feature_names(original_features):
+    """Convert feature codes to readable names."""
+    # This dictionary maps feature codes to human-readable names
+    # Update this with your actual feature names based on your dataset
+    feature_name_mapping = {
+        # Examples - update with your actual feature mappings
+        "ClaimAmount": "Claim Amount ($)",
+        "Age": "Customer Age",
+        "Gender": "Customer Gender",
+        "PolicyDuration": "Policy Length (months)",
+        "PremiumAmount": "Premium Amount ($)",
+        "ClaimType": "Type of Claim",
+        "ClaimComplexity": "Claim Complexity Score",
+        "Region": "Geographic Region",
+        "DaysToFile": "Days to File Claim",
+        "PriorClaims": "Number of Prior Claims",
+        "Income": "Customer Income",
+        "CustomerID": "Customer ID",
+        # Add more mappings as needed
+    }
+    
+    readable_features = []
+    for feature in original_features:
+        # If we have a specific mapping, use it; otherwise keep the original
+        readable_features.append(feature_name_mapping.get(feature, feature))
+    
+    return readable_features
 
 def explain_model(df, model):
-    st.title("Explainable AI (XAI)")
-
-    tabs = st.tabs(["SHAP Analysis", "Feature Importance", "What-If Analysis"])
-
-    important_features = [
-        "CustomerFeedbackScore", "PolicyStartYear", "PolicyDiscounts",
-        "PolicyUpgradesLastYear", "Age", "County", "Income",
-        "PolicyDurationMonths", "NumberOfInquiriesLastYear", "CustomerSatisfaction"
-    ]
-
-    X = df[important_features].copy()
-    y = df["TimeToResolutionDays"]
-
-    # Encode categorical
-    le_dict = {}
-    categorical_cols = X.select_dtypes(include=['object']).columns
-    for col in categorical_cols:
-        le = LabelEncoder()
-        X[col] = le.fit_transform(X[col])
-        le_dict[col] = le
-
-    # Standard scale
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
-
-    # ---------------------------- SHAP ANALYSIS TAB ---------------------------- #
+    st.write("### 🧠 Understanding Model Predictions")
+    st.info("This page helps interpret how the model makes decisions for insurance claim resolution time.")
+    
+    # Get readable feature names
+    readable_feature_names = get_readable_feature_names(feature_names)
+    
+    tabs = st.tabs(["Feature Importance", "SHAP Values", "What-If Analysis"])
+    
     with tabs[0]:
-        st.subheader("SHAP Summary Plot")
-        st.markdown("This explains the impact of each feature on individual predictions.")
-
-        explainer = shap.Explainer(model, X)
-        shap_values = explainer(X)
-
-        # st.set_option('deprecation.showPyplotGlobalUse', False)
-        shap.summary_plot(shap_values, X, plot_type="bar")
-        st.pyplot(bbox_inches='tight')
-
-        st.subheader("SHAP Dependence Plot")
-        feature = st.selectbox("Select feature for SHAP dependence plot", X.columns)
-        shap.dependence_plot(feature, shap_values.values, X, interaction_index=None)
-        st.pyplot(bbox_inches='tight')
-
-    # ------------------------ BUILT-IN IMPORTANCE TAB ------------------------ #
+        st.write("#### 📊 Global Feature Importance")
+        st.write("These are the most influential factors in determining claim resolution time.")
+        
+        # Get feature importance from model (assuming XGBoost model)
+        if hasattr(model, 'feature_importances_'):
+            importances = model.feature_importances_
+            feature_importance_df = pd.DataFrame({
+                'Feature': readable_feature_names,  # Use readable names
+                'Importance': importances
+            }).sort_values(by='Importance', ascending=False)
+            
+            fig = px.bar(
+                feature_importance_df,
+                x='Importance',
+                y='Feature',
+                orientation='h',
+                title='Feature Importance (Higher = More Impact)',
+                color='Importance',
+                color_continuous_scale='viridis'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("⚠️ Model doesn't provide direct feature importance. Try SHAP values instead.")
+    
     with tabs[1]:
-        st.subheader("Feature Importance")
-        importances = model.feature_importances_
-
-        feature_df = pd.DataFrame({
-            "Feature": X.columns,
-            "Importance": importances
-        }).sort_values(by="Importance", ascending=False)
-
-        fig = px.bar(feature_df, x="Importance", y="Feature", orientation="h",
-                     title="Built-in Feature Importance", color="Importance",
-                     color_continuous_scale="viridis")
-        st.plotly_chart(fig, use_container_width=True)
-
-        st.subheader("Permutation Importance")
-        with st.spinner("Calculating permutation importance..."):
-            perm = permutation_importance(model, X, y, n_repeats=5, random_state=42)
-
-        perm_df = pd.DataFrame({
-            "Feature": X.columns,
-            "Importance": perm.importances_mean,
-            "Std": perm.importances_std
-        }).sort_values(by="Importance", ascending=False)
-
-        fig2 = px.bar(perm_df, x="Importance", y="Feature", orientation="h",
-                      title="Permutation Feature Importance",
-                      error_x="Std", color="Importance",
-                      color_continuous_scale="viridis")
-        st.plotly_chart(fig2, use_container_width=True)
-
-    # ----------------------------- WHAT-IF TAB ----------------------------- #
+        st.write("#### 🔍 SHAP Values Explanation")
+        st.write("SHAP values show how each feature contributes to individual predictions.")
+        
+        if not SHAP_AVAILABLE:
+            st.warning("⚠️ SHAP library not installed or incompatible. Please install with: `pip install shap`")
+            st.info("If you've already installed SHAP, there might be a compatibility issue with your environment.")
+        else:
+            # Add an option to use alternate approach
+            use_alt_approach = st.checkbox("Use alternative SHAP approach (try this if you get errors)")
+            
+            # User can choose between different SHAP visualizations
+            shap_view = st.radio(
+                "Choose SHAP visualization type:",
+                ["Summary Plot", "Detailed Beeswarm", "Waterfall Plot (Single Instance)"],
+                horizontal=True
+            )
+            
+            if st.button("Generate SHAP Analysis"):
+                with st.spinner("Calculating SHAP values (this may take a while)..."):
+                    try:
+                        # Get a sample of the data (for performance)
+                        if len(df) > 100:
+                            sample_size = st.slider("Sample size (smaller is faster):", 10, min(100, len(df)), 50)
+                            sample_df = df.sample(sample_size, random_state=42)
+                        else:
+                            sample_df = df
+                        
+                        # Prepare the data
+                        X = sample_df.copy()
+                        for col in encoders:
+                            if col in X.columns:
+                                X[col] = encoders[col].transform(X[col])
+                        
+                        # Ensure only appropriate columns are used
+                        X = X[feature_names]
+                        
+                        # Scale the data
+                        X_scaled = scaler.transform(X)
+                        
+                        # Create DataFrame with READABLE feature names for better visualization
+                        X_display = pd.DataFrame(X_scaled, columns=readable_feature_names)
+                        
+                        if use_alt_approach:
+                            # Alternative approach using TreeExplainer directly
+                            st.write("Using alternative TreeExplainer approach...")
+                            explainer = shap.TreeExplainer(model)
+                            shap_values = explainer.shap_values(X_scaled)
+                            
+                            # Convert to DataFrame for visualization
+                            shap_df = pd.DataFrame(shap_values, columns=readable_feature_names)  # Use readable names
+                            
+                            # Create simpler visualization with Plotly instead of matplotlib
+                            if shap_view == "Summary Plot" or shap_view == "Detailed Beeswarm":
+                                # Calculate average absolute SHAP value for each feature
+                                feature_importance = pd.DataFrame({
+                                    'Feature': readable_feature_names,  # Use readable names
+                                    'Importance': np.abs(shap_df).mean().values
+                                }).sort_values('Importance', ascending=False)
+                                
+                                fig = px.bar(
+                                    feature_importance,
+                                    x='Importance',
+                                    y='Feature',
+                                    orientation='h',
+                                    title='SHAP Feature Importance',
+                                    color='Importance',
+                                    color_continuous_scale='viridis'
+                                )
+                                st.plotly_chart(fig, use_container_width=True)
+                                
+                                # Also show a heatmap of SHAP values
+                                st.write("#### SHAP Values Heatmap")
+                                st.write("Red = positive impact, Blue = negative impact")
+                                
+                                # Sample a few rows for the heatmap (too many makes it unreadable)
+                                heat_rows = min(20, shap_df.shape[0])
+                                heat_data = shap_df.iloc[:heat_rows, :]
+                                
+                                heat_fig = px.imshow(
+                                    heat_data,
+                                    labels=dict(x="Feature", y="Instance", color="SHAP Value"),
+                                    x=readable_feature_names,  # Use readable names
+                                    color_continuous_scale='RdBu_r',
+                                    aspect="auto"
+                                )
+                                st.plotly_chart(heat_fig, use_container_width=True)
+                                
+                            elif shap_view == "Waterfall Plot (Single Instance)":
+                                # Let user select an instance to analyze
+                                instance_index = st.number_input(
+                                    "Select instance to explain (row number):", 
+                                    min_value=0, 
+                                    max_value=len(X_scaled)-1, 
+                                    value=0
+                                )
+                                
+                                # Get SHAP values for this instance
+                                instance_shap = shap_df.iloc[instance_index]
+                                
+                                # Sort by absolute value
+                                sorted_idx = np.argsort(np.abs(instance_shap.values))[::-1]
+                                sorted_features = [readable_feature_names[i] for i in sorted_idx]  # Use readable names
+                                sorted_values = instance_shap.values[sorted_idx]
+                                
+                                # Create waterfall-like chart with Plotly
+                                waterfall_df = pd.DataFrame({
+                                    'Feature': sorted_features,
+                                    'SHAP Value': sorted_values
+                                })
+                                
+                                fig = px.bar(
+                                    waterfall_df,
+                                    x='SHAP Value',
+                                    y='Feature',
+                                    orientation='h',
+                                    title=f'Feature Impact for Instance #{instance_index}',
+                                    color='SHAP Value',
+                                    color_continuous_scale='RdBu_r'
+                                )
+                                st.plotly_chart(fig, use_container_width=True)
+                                
+                                # Show the actual instance data
+                                st.write("#### Instance Details:")
+                                instance_data = {}
+                                for i, feature in enumerate(feature_names):
+                                    # Try to decode categorical features
+                                    if feature in encoders:
+                                        # Find the original value that most closely matches the encoded value
+                                        original_values = encoders[feature].classes_
+                                        encoded_val = X[feature].iloc[instance_index]
+                                        # Find closest match for the encoded value
+                                        closest_idx = np.argmin(np.abs(encoders[feature].transform(original_values) - encoded_val))
+                                        instance_data[readable_feature_names[i]] = original_values[closest_idx]
+                                    else:
+                                        # For numerical features, show original value
+                                        instance_data[readable_feature_names[i]] = X[feature].iloc[instance_index]
+                                
+                                # Display as a DataFrame for better formatting
+                                st.dataframe(pd.DataFrame([instance_data]), use_container_width=True)
+                                
+                        else:
+                            # Standard SHAP approach
+                            try:
+                                # Create explainer
+                                explainer = shap.Explainer(model)
+                                shap_values = explainer(X_scaled)
+                                
+                                # Override the feature names with readable ones
+                                shap_values.feature_names = readable_feature_names
+                                
+                                # Display the selected SHAP visualization
+                                if shap_view == "Summary Plot":
+                                    plt.figure(figsize=(10, 8))
+                                    shap.summary_plot(shap_values, X_display, feature_names=readable_feature_names)
+                                    st.pyplot(plt.gcf(), clear_figure=True)
+                                    
+                                elif shap_view == "Detailed Beeswarm":
+                                    plt.figure(figsize=(10, 8))
+                                    shap.plots.beeswarm(shap_values, max_display=15)
+                                    st.pyplot(plt.gcf(), clear_figure=True)
+                                    
+                                elif shap_view == "Waterfall Plot (Single Instance)":
+                                    # Let user select an instance to analyze
+                                    instance_index = st.number_input(
+                                        "Select instance to explain (row number):", 
+                                        min_value=0, 
+                                        max_value=len(X_scaled)-1, 
+                                        value=0
+                                    )
+                                    
+                                    plt.figure(figsize=(10, 8))
+                                    shap.plots.waterfall(shap_values[instance_index], max_display=15)
+                                    st.pyplot(plt.gcf(), clear_figure=True)
+                                
+                            except Exception as e:
+                                st.error(f"Error with standard SHAP approach: {e}")
+                                st.info("Try checking the 'Use alternative SHAP approach' option above.")
+                        
+                        # Interpretation guide
+                        st.write("**Interpretation Guide:**")
+                        st.write("""
+                        - **Red/positive values** push the prediction higher (longer resolution time)
+                        - **Blue/negative values** push the prediction lower (shorter resolution time)
+                        - **Larger magnitude** means stronger impact on the prediction
+                        """)
+                        
+                    except Exception as e:
+                        st.error(f"Error generating SHAP analysis: {e}")
+                        st.info("Try using a smaller dataset or check if SHAP is compatible with your environment.")
+                        
+                        # Fallback to basic feature importance
+                        st.write("#### Fallback: Basic Feature Importance")
+                        if hasattr(model, 'feature_importances_'):
+                            importances = model.feature_importances_
+                            feature_importance_df = pd.DataFrame({
+                                'Feature': readable_feature_names,  # Use readable names
+                                'Importance': importances
+                            }).sort_values(by='Importance', ascending=False)
+                            
+                            fig = px.bar(
+                                feature_importance_df,
+                                x='Importance',
+                                y='Feature',
+                                orientation='h',
+                                title='Feature Importance (Higher = More Impact)',
+                                color='Importance',
+                                color_continuous_scale='viridis'
+                            )
+                            st.plotly_chart(fig, use_container_width=True)
+    
     with tabs[2]:
-        st.subheader("What-If Analysis")
-        st.markdown("Simulate changes in customer or policy features to observe predicted outcome.")
-
-        default_instance = X.iloc[np.random.randint(0, X.shape[0])].copy()
-        st.write("Starting with the following instance:")
-        st.dataframe(default_instance.to_frame().T)
-
-        user_inputs = {}
-        col1, col2 = st.columns(2)
-        split = len(X.columns) // 2
-        for i, col in enumerate(X.columns):
-            col_container = col1 if i < split else col2
-            min_val = float(X[col].min())
-            max_val = float(X[col].max())
-            step = (max_val - min_val) / 100 if max_val > min_val else 1
-            user_inputs[col] = col_container.slider(col, min_val, max_val, float(default_instance[col]), step=step)
-
-        modified_instance = pd.DataFrame([user_inputs])
-        original_pred = model.predict([default_instance])[0]
-        new_pred = model.predict(modified_instance)[0]
-
-        st.metric("Original Prediction", f"{original_pred:.2f} days")
-        st.metric("Modified Prediction", f"{new_pred:.2f} days", delta=f"{new_pred - original_pred:.2f} days")
-
-        st.markdown("#### Feature Contribution to Change")
-        contributions = {}
-        for feature in X.columns:
-            temp_instance = default_instance.copy()
-            temp_instance[feature] = user_inputs[feature]
-            contrib_pred = model.predict([temp_instance])[0]
-            contributions[feature] = contrib_pred - original_pred
-
-        contrib_df = pd.DataFrame({
-            "Feature": list(contributions.keys()),
-            "Contribution": list(contributions.values())
-        }).sort_values(by="Contribution", key=abs, ascending=False)
-
-        fig3 = px.bar(contrib_df, x="Feature", y="Contribution",
-                      title="Feature Contributions to Change",
-                      color="Contribution", color_continuous_scale="RdBu_r")
-        st.plotly_chart(fig3, use_container_width=True)
+        st.write("#### 🔄 What-If Analysis")
+        st.write("Explore how changing input values affects predictions.")
+        
+        st.subheader("Select Features to Compare")
+        
+        # Let user select features to vary
+        cols = st.columns(2)
+        with cols[0]:
+            feature1_idx = st.selectbox("Feature 1:", range(len(readable_feature_names)), 
+                                      format_func=lambda i: readable_feature_names[i])
+            feature1 = feature_names[feature1_idx]
+        with cols[1]:
+            # Default to a different feature for second selection
+            default_idx = min(1, len(readable_feature_names)-1)
+            if default_idx == feature1_idx:
+                default_idx = min(0, len(readable_feature_names)-1)
+                
+            feature2_idx = st.selectbox("Feature 2:", range(len(readable_feature_names)), 
+                                      index=default_idx,
+                                      format_func=lambda i: readable_feature_names[i])
+            feature2 = feature_names[feature2_idx]
+        
+        if feature1 == feature2:
+            st.warning("⚠️ Please select two different features.")
+        else:
+            # Create inputs for other features
+            st.subheader("Set Values for Other Features")
+            other_inputs = {}
+            
+            # Create 2-column layout for controls
+            num_other_features = len(feature_names) - 2
+            col_features = st.columns(2)
+            
+            feature_idx = 0
+            for i, feature in enumerate(feature_names):
+                if feature not in [feature1, feature2]:
+                    col_idx = feature_idx % 2
+                    with col_features[col_idx]:
+                        if feature in ['CustomerID']:
+                            other_inputs[feature] = 0
+                        elif feature in encoders:
+                            options = encoders[feature].classes_
+                            other_inputs[feature] = st.selectbox(f"{readable_feature_names[i]}", options)
+                        else:
+                            # Use slider with appropriate range
+                            from src.utils import get_range_for_feature
+                            min_val, max_val, step_val = get_range_for_feature(feature)
+                            other_inputs[feature] = st.slider(
+                                f"{readable_feature_names[i]}", 
+                                min_value=min_val,
+                                max_value=max_val,
+                                step=step_val
+                            )
+                    feature_idx += 1
+            
+            # Define ranges for the two features
+            if st.button("Generate What-If Analysis"):
+                with st.spinner("Generating analysis..."):
+                    # Create ranges for the two features
+                    if feature1 in encoders:
+                        range1 = encoders[feature1].classes_
+                    else:
+                        from src.utils import get_range_for_feature
+                        min_val, max_val, step_val = get_range_for_feature(feature1)
+                        range1 = np.linspace(min_val, max_val, 10)
+                    
+                    if feature2 in encoders:
+                        range2 = encoders[feature2].classes_
+                    else:
+                        from src.utils import get_range_for_feature
+                        min_val, max_val, step_val = get_range_for_feature(feature2)
+                        range2 = np.linspace(min_val, max_val, 10)
+                    
+                    # Create grid of predictions
+                    results = []
+                    
+                    for val1 in range1:
+                        for val2 in range2:
+                            # Create input dictionary
+                            input_data = other_inputs.copy()
+                            input_data[feature1] = val1
+                            input_data[feature2] = val2
+                            
+                            # Create dataframe
+                            input_df = pd.DataFrame([input_data])
+                            
+                            # Apply encoders
+                            for col, encoder in encoders.items():
+                                if col in input_df.columns:
+                                    input_df[col] = encoder.transform(input_df[col])
+                            
+                            # Ensure column order
+                            input_df = input_df[feature_names]
+                            
+                            # Scale data
+                            input_scaled = scaler.transform(input_df)
+                            
+                            # Predict
+                            prediction = model.predict(input_scaled)[0]
+                            
+                            # Store result with readable feature names
+                            feature1_readable = readable_feature_names[feature_names.index(feature1)]
+                            feature2_readable = readable_feature_names[feature_names.index(feature2)]
+                            
+                            results.append({
+                                feature1_readable: val1,
+                                feature2_readable: val2,
+                                'Prediction': prediction
+                            })
+                    
+                    # Convert to dataframe
+                    results_df = pd.DataFrame(results)
+                    
+                    # Create heatmap or scatter plot
+                    feature1_readable = readable_feature_names[feature_names.index(feature1)]
+                    feature2_readable = readable_feature_names[feature_names.index(feature2)]
+                    
+                    if len(range1) <= 20 and len(range2) <= 20:
+                        # Create pivot table for heatmap
+                        pivot_df = results_df.pivot(index=feature2_readable, columns=feature1_readable, values='Prediction')
+                        
+                        fig = px.imshow(
+                            pivot_df,
+                            labels=dict(x=feature1_readable, y=feature2_readable, color="Predicted Resolution Time (Days)"),
+                            title=f"How {feature1_readable} and {feature2_readable} Affect Prediction",
+                            color_continuous_scale="viridis"
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        # Create 3D scatter plot
+                        fig = px.scatter_3d(
+                            results_df,
+                            x=feature1_readable,
+                            y=feature2_readable,
+                            z='Prediction',
+                            color='Prediction',
+                            title=f"How {feature1_readable} and {feature2_readable} Affect Prediction",
+                            color_continuous_scale="viridis"
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Show data table
+                    with st.expander("View Raw Prediction Data"):
+                        st.dataframe(results_df, use_container_width=True)

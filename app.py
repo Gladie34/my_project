@@ -1,106 +1,117 @@
 import streamlit as st
 import pandas as pd
-from src.explore_page import eda, plot_time_to_resolution_distribution, corelation_map
+import os
+from src.explore_page import run_exploration
 from src.predict_page import predict_customer_info
-from src.xai_page import explain_model  # Requires updated explain_model(df, model)
+from src.xai_page import explain_model
 
-# Set page styling
-def set_page_styling():
-    st.markdown("""
-        <style>
-        .stApp { background-color: #f8f9fa; }
-        .main-header {
-            font-size: 2.5rem;
-            color: #2c3e50;
-            text-align: center;
-            padding: 1rem 0;
-            margin-bottom: 2rem;
-            border-bottom: 2px solid #3498db;
-        }
-        .section-header {
-            font-size: 1.8rem;
-            color: #34495e;
-            border-left: 4px solid #3498db;
-            padding-left: 10px;
-            margin: 1.5rem 0;
-        }
-        .info-box {
-            background-color: #e8f4f8;
-            border-left: 5px solid #3498db;
-            padding: 1rem;
-            border-radius: 0.5rem;
-        }
-        .success-box {
-            background-color: #d4edda;
-            border-left: 5px solid #28a745;
-            padding: 1rem;
-            border-radius: 0.5rem;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+# Function to load CSS
+def load_css(css_file):
+    if os.path.exists(css_file):
+        with open(css_file) as f:
+            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    else:
+        st.warning(f"CSS file {css_file} not found.")
 
-# Replace county names with codes
-def replace_county_with_code(df, county_column='Region'):
-    county_mapping = {
-        "Mombasa": 1, "Kwale": 2, "Kilifi": 3, "Tana River": 4, "Lamu": 5, "Taita Taveta": 6,
-        "Garissa": 7, "Wajir": 8, "Mandera": 9, "Marsabit": 10, "Isiolo": 11, "Meru": 12,
-        "Tharaka Nithi": 13, "Embu": 14, "Kitui": 15, "Machakos": 16, "Makueni": 17,
-        "Nyandarua": 18, "Nyeri": 19, "Kirinyaga": 20, "Murang'a": 21, "Kiambu": 22,
-        "Turkana": 23, "West Pokot": 24, "Samburu": 25, "Trans Nzoia": 26, "Eldoret": 27,
-        "Elgeyo Marakwet": 28, "Nandi": 29, "Baringo": 30, "Laikipia": 31, "Nakuru": 32,
-        "Narok": 33, "Kajiado": 34, "Kericho": 35, "Bomet": 36, "Kakamega": 37, "Vihiga": 38,
-        "Bungoma": 39, "Busia": 40, "Siaya": 41, "Kisumu": 42, "Homa Bay": 43, "Migori": 44,
-        "Kisii": 45, "Nyamira": 46, "Nairobi": 47
-    }
-    df['County'] = df[county_column].map(county_mapping)
+def load_data():
+    uploaded_file = st.sidebar.file_uploader("Upload CSV file", type=["csv"])
+    if uploaded_file:
+        df = pd.read_csv(uploaded_file)
+        st.success("Dataset loaded successfully.")
+    else:
+        df = pd.read_csv("data/Insurance_data.csv")
+        st.info("Using default dataset.")
     return df
 
 def main():
-    st.set_page_config(page_title="Insurance Claims Resolution Predictor", page_icon="⏱️", layout="wide")
-    set_page_styling()
-    st.markdown("<h1 class='main-header'>⏱️ Insurance Claim Resolution Time Predictor</h1>", unsafe_allow_html=True)
+    # Set page configuration
+    st.set_page_config(
+        page_title="Time for Claim Resolution Predictor",
+        page_icon="⏱️",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
+    
+    # Load custom CSS (updated path)
+    load_css("style.css")  # Loading from root directory
+    
+    # App header with clock emoji and updated title
+    st.title("⏱️ Time for Claim Resolution Predictor")
+    st.markdown("#### Predict resolution time for insurance claims using machine learning")
+    
+    # Add a separator
+    st.markdown("<hr>", unsafe_allow_html=True)
 
-    # Sidebar
+    # Sidebar content
     with st.sidebar:
-        st.markdown("### 📂 Upload Data")
-        uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
-        st.markdown("---")
-        section = st.radio("Choose a section", ["📊 Explore Data", "🧠 Train & Predict", "🔍 Explainable AI"])
-        st.markdown("---")
-        st.markdown("**Version**: 2.0  \n**Last updated**: April 2025")
+        st.markdown("## Upload Data")
+        df = load_data()
 
-    # Load and prepare data
-    @st.cache_data
-    def load_data(path):
-        return pd.read_csv(path)
+        st.markdown("## Navigate to:")
+        section = st.radio("", ["Explore Data", "Predict", "Interpretation"])
 
-    if uploaded_file:
-        df = load_data(uploaded_file)
-        st.success("✅ File uploaded successfully.")
-    else:
-        df = load_data("./data/Insurance_data.csv")
-        df = replace_county_with_code(df, 'Region')
-        st.info("Using default dataset.")
+        st.markdown("----")
+        st.markdown("**Version:** 2.3")
+        st.markdown("**Last updated:** April 2025")
+        
+        # About section in sidebar
+        with st.expander("About this app"):
+            st.markdown("""
+            This application uses machine learning to predict how long it will 
+            take to resolve insurance claims based on various factors.
+            
+            **Features:**
+            - Data visualization and exploration
+            - Custom prediction inputs
+            - Model interpretation with SHAP values
+            """)
 
-    # Section: Explore Data
-    if section == "📊 Explore Data":
-        st.markdown("<h2 class='section-header'>📊 Data Exploration</h2>", unsafe_allow_html=True)
-        with st.expander("Dataset Overview", expanded=True): eda(df)
-        with st.expander("Time to Resolution Distribution", expanded=True): plot_time_to_resolution_distribution(df)
-        with st.expander("Correlation Map", expanded=True): corelation_map(df)
+    # Main content area
+    if section == "Explore Data":
+        st.markdown("<h2 class='section-header'>Data Exploration</h2>", unsafe_allow_html=True)
+        run_exploration(df)
 
-    # Section: Train & Predict
-    elif section == "🧠 Train & Predict":
-        st.markdown("<h2 class='section-header'>🧠 Train & Predict</h2>", unsafe_allow_html=True)
-        st.session_state.model = predict_customer_info(df)  # Store trained model in session_state
+    elif section == "Predict":
+        st.markdown("<h2 class='section-header'>Prediction</h2>", unsafe_allow_html=True)
+        
+        # Instructions card
+        st.markdown("""
+        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 5px; 
+        border-left: 5px solid #1E88E5; margin-bottom: 20px;'>
+            <h4 style='margin-top: 0'>How to use the predictor:</h4>
+            <p>1. Enter the claim details in the form below</p>
+            <p>2. Click the Predict button to get the estimated resolution time</p>
+            <p>3. Check the Interpretation tab to understand what factors influence the prediction</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        model = predict_customer_info()
+        if model:
+            st.session_state.model = model
 
-    # Section: Explainable AI
-    elif section == "🔍 Explainable AI":
-        st.markdown("<h2 class='section-header'>🔍 Explainable AI Insights</h2>", unsafe_allow_html=True)
+    elif section == "Interpretation":
+        st.markdown("<h2 class='section-header'>Model Interpretation</h2>", unsafe_allow_html=True)
+        
         if "model" in st.session_state:
             explain_model(df, st.session_state.model)
         else:
-            st.warning("⚠️ Please train the model first under 'Train & Predict' section.")
+            st.warning("""
+            Please run a prediction first to load the model.
+            
+            Go to the Predict section and submit a prediction to enable model interpretation.
+            """)
+            
+            if st.button("Go to Prediction Page"):
+                st.session_state.section = "Predict"
+                st.experimental_rerun()
+    
+    # Footer
+    st.markdown("<hr style='margin-top: 30px;'>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style='text-align: center; color: #888; font-size: 0.8rem;'>
+        Developed with Streamlit and Machine Learning | © 2025
+    </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
