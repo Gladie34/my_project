@@ -1,0 +1,134 @@
+/* Custom CSS for Insurance Claim Resolution Predictor */
+
+/* Main page styling */
+.main .block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* Title styling */
+h1 {
+    color: #1E88E5;
+    border-bottom: 2px solid #1E88E5;
+    padding-bottom: 10px;
+    font-weight: 700;
+}
+
+/* Section headers */
+h2 {
+    color: #333333;
+    font-weight: 600;
+    margin-top: 1.5rem;
+}
+
+h3 {
+    color: #555555;
+    font-weight: 500;
+}
+
+/* Card-like styling for expanders */
+.streamlit-expanderHeader {
+    background-color: #F5F7FA;
+    border-radius: 5px;
+    border-left: 5px solid #1E88E5;
+    padding-left: 10px !important;
+}
+
+.streamlit-expanderContent {
+    border: 1px solid #E0E0E0;
+    border-radius: 0px 0px 5px 5px;
+    padding: 10px;
+}
+
+/* Button styling */
+.stButton > button {
+    background-color: #1E88E5;
+    color: white;
+    border-radius: 5px;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.stButton > button:hover {
+    background-color: #1565C0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Input fields styling */
+.stTextInput > div > div > input, 
+.stNumberInput > div > div > input,
+.stSelectbox > div > div {
+    border-radius: 5px;
+    border: 1px solid #E0E0E0;
+    padding: 0.5rem;
+}
+
+.stTextInput > div > div > input:focus, 
+.stNumberInput > div > div > input:focus {
+    border-color: #1E88E5;
+    box-shadow: 0 0 0 2px rgba(30, 136, 229, 0.2);
+}
+
+/* Success message styling */
+.element-container div[data-testid="stAlert"] {
+    background-color: #E3F2FD;
+    border-left: 5px solid #1E88E5;
+    border-radius: 5px;
+    padding: 10px 20px !important;
+}
+
+/* Sidebar styling */
+.sidebar .sidebar-content {
+    background-color: #F5F7FA;
+    border-right: 1px solid #E0E0E0;
+}
+
+.sidebar h2 {
+    color: #1E88E5;
+    font-size: 1.2rem;
+    margin-top: 2rem;
+}
+
+/* Metric styling */
+[data-testid="stMetric"] {
+    background-color: #F5F7FA;
+    border-radius: 5px;
+    padding: 10px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+[data-testid="stMetricLabel"] {
+    color: #555555 !important;
+    font-weight: 500 !important;
+}
+
+[data-testid="stMetricValue"] {
+    color: #1E88E5 !important;
+    font-weight: 700 !important;
+}
+
+/* Progress bar styling */
+.stProgress > div > div > div > div {
+    background-color: #1E88E5;
+}
+
+/* Tab styling */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 8px;
+}
+
+.stTabs [data-baseweb="tab"] {
+    background-color: #F5F7FA;
+    border-radius: 5px 5px 0 0;
+    padding: 10px 20px;
+    border: 1px solid #E0E0E0;
+    border-bottom: none;
+}
+
+.stTabs [aria-selected="true"] {
+    background-color: white;
+    border-top: 3px solid #1E88E5;
+}
