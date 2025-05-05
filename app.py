@@ -29,13 +29,29 @@ def main():
         page_title="Time for Claim Resolution Predictor",
         page_icon="⏱️",
         layout="wide",
-        initial_sidebar_state="expanded"
+        initial_sidebar_state="expanded",
+        # Force light theme to match your current UI
+        menu_items={
+            'Get Help': None,
+            'Report a bug': None,
+            'About': 'Time for Claim Resolution Predictor v2.3'
+        }
     )
     
-    # Load custom CSS (updated path)
-    load_css("style.css")  # Loading from root directory
+    # Light theme enforcement - just one small addition to your existing code
+    st.markdown("""
+    <style>
+    /* Force light theme to match development UI */
+    .stApp {
+        background-color: white;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
-    # App header with clock emoji and updated title
+    # Load custom CSS
+    load_css("style.css")
+    
+    # App header with clock emoji
     st.title("⏱️ Time for Claim Resolution Predictor")
     st.markdown("#### Predict resolution time for insurance claims using machine learning")
     

@@ -1,0 +1,18 @@
+[theme]
+# Use blue as primary color (matches your current UI)
+primaryColor = "#1E88E5"
+
+# White background for clean look
+backgroundColor = "#FFFFFF"
+
+# Light secondary background for sidebar and cards
+secondaryBackgroundColor = "#F5F7FA"
+
+# Dark text color for good contrast
+textColor = "#262730"
+
+# Standard sans-serif font
+font = "sans serif"
+
+# Explicitly set light theme as base
+base = "light"
