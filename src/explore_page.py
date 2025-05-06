@@ -13,7 +13,8 @@ def eda(df):
         <ul>
             <li><strong>Dataset Overview</strong>: View key metrics and basic statistics</li>
             <li><strong>Resolution Time Analysis</strong>: Explore distribution of claim resolution times</li>
-            <li><strong>Feature Relationships</strong>: Discover correlations between factors that influence resolution time</li>
+            <li><strong>Demographics Analysis</strong>: Analyze demographics like gender and age</li>
+            <li><strong>Feature Importance</strong>: Discover key factors that influence resolution time</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
@@ -43,9 +44,13 @@ def eda(df):
     # Show dataset preview
     st.markdown("### Raw Dataset Preview")
     try:
-        if st.checkbox("Select specific columns to view"):
-            selected_columns = st.multiselect("Choose columns:", df.columns.tolist(), 
-                                             default=list(df.columns)[:min(5, len(df.columns))])
+        if st.checkbox("Select specific columns to view", label_visibility="visible"):
+            selected_columns = st.multiselect(
+                "Choose columns:", 
+                df.columns.tolist(), 
+                default=list(df.columns)[:min(5, len(df.columns))],
+                label_visibility="visible"
+            )
             st.dataframe(df[selected_columns].head(10), use_container_width=True)
         else:
             st.dataframe(df.head(10), use_container_width=True)
@@ -53,7 +58,7 @@ def eda(df):
         st.error(f"Error displaying dataset preview: {str(e)}")
     
     try:
-        if st.checkbox("Show Dataset Information"):
+        if st.checkbox("Show Dataset Information", label_visibility="visible"):
             col1, col2 = st.columns(2)
             with col1:
                 st.markdown("#### Data Types & Non-Null Counts")
@@ -117,31 +122,122 @@ def plot_time_to_resolution_distribution(data, column='TimeToResolutionDays',
     except Exception as e:
         st.error(f"Error creating distribution plots: {str(e)}")
 
-def correlation_map(df):
-    st.markdown("### Feature Relationships")
+def analyze_demographics(df):
+    st.markdown("### Demographics Analysis")
+    
+    # Check if the necessary columns exist
+    has_gender = "Gender" in df.columns
+    has_age = "Age" in df.columns
+    
+    if not (has_gender or has_age):
+        st.warning("Neither Gender nor Age columns found in the dataset. Cannot create demographics charts.")
+        return
+    
+    col1, col2 = st.columns(2)
+    
+    # Gender Distribution Chart
+    if has_gender:
+        with col1:
+            try:
+                # Create gender counts
+                gender_counts = df['Gender'].value_counts().reset_index()
+                gender_counts.columns = ['Gender', 'Count']
+                
+                # Create gender bar chart
+                fig = px.bar(
+                    gender_counts,
+                    x='Gender',
+                    y='Count',
+                    title='Distribution by Gender',
+                    color='Gender',
+                    text='Count',
+                    color_discrete_sequence=['#1E88E5', '#FFC107', '#4CAF50']
+                )
+                fig.update_layout(
+                    xaxis_title="Gender",
+                    yaxis_title="Number of Claims"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Gender by resolution time
+                if "TimeToResolutionDays" in df.columns:
+                    avg_by_gender = df.groupby('Gender')['TimeToResolutionDays'].mean().reset_index()
+                    avg_by_gender.columns = ['Gender', 'Avg Resolution Time (Days)']
+                    
+                    fig2 = px.bar(
+                        avg_by_gender,
+                        x='Gender',
+                        y='Avg Resolution Time (Days)',
+                        title='Average Resolution Time by Gender',
+                        color='Gender',
+                        text_auto='.1f',
+                        color_discrete_sequence=['#1E88E5', '#FFC107', '#4CAF50']
+                    )
+                    st.plotly_chart(fig2, use_container_width=True)
+            except Exception as e:
+                st.error(f"Error creating gender charts: {str(e)}")
+    
+    # Age Distribution Chart
+    if has_age:
+        with col2:
+            try:
+                # Bin ages into groups
+                age_bins = [0, 18, 30, 45, 60, 75, 100]
+                age_labels = ['<18', '18-30', '31-45', '46-60', '61-75', '75+']
+                
+                df['AgeGroup'] = pd.cut(df['Age'], bins=age_bins, labels=age_labels, right=False)
+                age_group_counts = df['AgeGroup'].value_counts().sort_index().reset_index()
+                age_group_counts.columns = ['Age Group', 'Count']
+                
+                # Create age group bar chart
+                fig = px.bar(
+                    age_group_counts,
+                    x='Age Group',
+                    y='Count',
+                    title='Distribution by Age Group',
+                    color='Age Group',
+                    text='Count',
+                    color_discrete_sequence=px.colors.sequential.Blues_r
+                )
+                fig.update_layout(
+                    xaxis_title="Age Group",
+                    yaxis_title="Number of Claims"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Age group by resolution time
+                if "TimeToResolutionDays" in df.columns:
+                    avg_by_age = df.groupby('AgeGroup')['TimeToResolutionDays'].mean().reset_index()
+                    avg_by_age.columns = ['Age Group', 'Avg Resolution Time (Days)']
+                    
+                    fig2 = px.bar(
+                        avg_by_age,
+                        x='Age Group',
+                        y='Avg Resolution Time (Days)',
+                        title='Average Resolution Time by Age Group',
+                        color='Age Group',
+                        text_auto='.1f',
+                        color_discrete_sequence=px.colors.sequential.Blues_r
+                    )
+                    st.plotly_chart(fig2, use_container_width=True)
+            except Exception as e:
+                st.error(f"Error creating age charts: {str(e)}")
+
+def feature_importance(df):
+    st.markdown("### Feature Importance")
     
     try:
-        # Get only numeric columns for correlation
+        # Get only numeric columns
         numeric_df = df.select_dtypes(include=[np.number])
         
         if numeric_df.empty or numeric_df.shape[1] < 2:
-            st.warning("Not enough numeric columns for correlation analysis. Need at least 2 numeric columns.")
+            st.warning("Not enough numeric columns for feature importance analysis. Need at least 2 numeric columns.")
             return
-        
-        corr_matrix = numeric_df.corr()
-        
-        fig = px.imshow(
-            corr_matrix,
-            text_auto=True,
-            aspect="auto",
-            color_continuous_scale='RdBu_r',
-            title="Correlation Heatmap of Numerical Features"
-        )
-        st.plotly_chart(fig, use_container_width=True)
         
         # Find the most correlated features with time to resolution
         if "TimeToResolutionDays" in numeric_df.columns:
             st.markdown("#### Top Features Correlated with Resolution Time")
+            corr_matrix = numeric_df.corr()
             corr_with_target = corr_matrix["TimeToResolutionDays"].drop("TimeToResolutionDays").sort_values(ascending=False)
             
             fig = px.bar(
@@ -154,21 +250,32 @@ def correlation_map(df):
                 color_continuous_scale="RdBu_r",
             )
             st.plotly_chart(fig, use_container_width=True)
+            
+            # Add explanation of correlation
+            st.markdown("""
+            **Interpretation of Feature Correlations:**
+            - **Positive values (blue)**: As this feature increases, resolution time tends to increase
+            - **Negative values (red)**: As this feature increases, resolution time tends to decrease
+            - **Larger absolute values**: Stronger relationship with resolution time
+            """)
     except Exception as e:
-        st.error(f"Error creating correlation map: {str(e)}")
+        st.error(f"Error creating feature importance chart: {str(e)}")
 
 def run_exploration(df):
-    # Only use one header for the page - remove this line to prevent duplication
-    # st.markdown("<h2 class='section-header'>Data Exploration</h2>", unsafe_allow_html=True)
-    
     # Show dataset info
     eda(df)
     
+    # Demographics Analysis
+    with st.expander("Demographics Analysis", expanded=True):
+        analyze_demographics(df)
+    
+    # Resolution Time Analysis
     if "TimeToResolutionDays" in df.columns:
         with st.expander("Resolution Time Distribution", expanded=True):
             plot_time_to_resolution_distribution(df)
     else:
         st.warning("Cannot create time distribution plots: 'TimeToResolutionDays' column not found")
     
-    with st.expander("Feature Correlations", expanded=True):
-        correlation_map(df)
+    # Feature Importance
+    with st.expander("Feature Importance", expanded=True):
+        feature_importance(df)
